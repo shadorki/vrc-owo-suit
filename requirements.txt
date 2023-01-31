@@ -1,0 +1,2 @@
+python-osc==1.8.0
+pythonnet==3.0.1
