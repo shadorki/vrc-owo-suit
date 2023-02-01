@@ -12,26 +12,40 @@ from OWOHaptic import OWO, Sensation, Muscle
 # 'Pectoral_R', 'Pectoral_L', 'Abdominal_R', 'Abdominal_L', 'Arm_R', 'Arm_L', 'Dorsal_R', 'Dorsal_L', 'Lumbar_R', 'Lumbar_L', 'AllMuscles', 'BackMuscles', 'FrontMuscles', 'FrontMusclesWithoutArms', 'Arms', 'Dorsals', 'Pectorals', 'Abdominals'
 
 osc_parameters = {
-    "/avatars/parameters/owo_suit_Pectoral_R": Muscle.Pectoral_R,
-    "/avatars/parameters/owo_suit_Pectoral_L": Muscle.Pectoral_L,
-    "/avatars/parameters/owo_suit_Abdominal_R": Muscle.Abdominal_R,
-    "/avatars/parameters/owo_suit_Abdominal_L": Muscle.Abdominal_L,
-    "/avatars/parameters/owo_suit_Arm_R": Muscle.Arm_R,
-    "/avatars/parameters/owo_suit_Arm_L": Muscle.Arm_L,
-    "/avatars/parameters/owo_suit_Dorsal_R": Muscle.Dorsal_R,
-    "/avatars/parameters/owo_suit_Dorsal_L": Muscle.Dorsal_L,
-    "/avatars/parameters/owo_suit_Lumbar_R": Muscle.Lumbar_R,
-    "/avatars/parameters/owo_suit_Lumbar_L": Muscle.Lumbar_L,
+    "/avatar/parameters/owo_suit_Pectoral_R": Muscle.Pectoral_R,
+    "/avatar/parameters/owo_suit_Pectoral_L": Muscle.Pectoral_L,
+    "/avatar/parameters/owo_suit_Abdominal_R": Muscle.Abdominal_R,
+    "/avatar/parameters/owo_suit_Abdominal_L": Muscle.Abdominal_L,
+    "/avatar/parameters/owo_suit_Arm_R": Muscle.Arm_R,
+    "/avatar/parameters/owo_suit_Arm_L": Muscle.Arm_L,
+    "/avatar/parameters/owo_suit_Dorsal_R": Muscle.Dorsal_R,
+    "/avatar/parameters/owo_suit_Dorsal_L": Muscle.Dorsal_L,
+    "/avatar/parameters/owo_suit_Lumbar_R": Muscle.Lumbar_R,
+    "/avatar/parameters/owo_suit_Lumbar_L": Muscle.Lumbar_L,
 }
 
 
+def ping_muscles() -> None:
+    for address, muscle in osc_parameters.items():
+        print(f'Pinging {address}')
+        send_sensation(muscle)
+        time.sleep(1)
+
+
 def send_sensation(muscle: Muscle) -> None:
+    print(f"Sending Sensation to {muscle}")
     OWO.Send(Sensation.Ball, muscle)
 
 
+def on_collission_enter(address: str, *args) -> None:
+    if not address in osc_parameters:
+        return
+    muscle = osc_parameters[address]
+    send_sensation(muscle)
+
+
 def map_parameters(dispatcher: dispatcher.Dispatcher) -> None:
-    for address, muscle in osc_parameters.items():
-        dispatcher.map(address, lambda: send_sensation(muscle))
+    dispatcher.set_default_handler(on_collission_enter)
 
 
 def connect(owo_ip: str) -> bool:

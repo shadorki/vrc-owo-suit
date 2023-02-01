@@ -16,9 +16,10 @@ try:
 
     threading.Thread(target=lambda: osc_server.serve_forever(2),
                      daemon=True).start()
+    # while True:
+    #     owo_suit.ping_muscles()
     input("Press any key to exit\n")
 except KeyboardInterrupt:
     print("Shutting Down...\n")
-except OSError as e:
-    print(e)
-    input("Caught issue with Windows\n")
+except OSError:
+    pass

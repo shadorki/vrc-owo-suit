@@ -50,3 +50,11 @@ Head over to the [Releases](https://github.com/uzair-ashraf/vrc-owo-suit/release
    This repository is setup with a Github action to compile the standalone executable. If you would like to compile it on your local machine you can read the action for the command via `pyinstaller` [here](./.github/workflows/release.yml).
 
 ## Setting up your avatar
+
+
+
+## Notes
+
+So it looks like when I send a sensation it cancels out the previous one
+
+Looks Like what I'll have to do is keep track of what sensations are in contact, and if they end up being triggered then I can chain them directly
