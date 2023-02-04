@@ -28,7 +28,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build with pyinstaller
-        run: pyinstaller --onefile --distpath ./build --name=vrc-owo-suit main.py
+        run: pyinstaller --add-binary "./owo/OWO.dll;OWO.dll" --onefile --distpath ./build --name=vrc-owo-suit main.py
 
       - name: Deploy EXE
         uses: actions/upload-artifact@v3

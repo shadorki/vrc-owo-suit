@@ -2,13 +2,14 @@ import asyncio
 import threading
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import ThreadingOSCUDPServer
-import owo_suit
+from owo_suit import OWOSuit
 import config
 
 try:
     print("Starting OWO Suit...")
     c = config.get()
-    owo_suit.init(c.owo_ip)
+    owo_suit = OWOSuit(c.owo_ip)
+    owo_suit.init()
     dispatcher = Dispatcher()
     owo_suit.map_parameters(dispatcher)
     osc_server = ThreadingOSCUDPServer(
@@ -16,8 +17,8 @@ try:
 
     threading.Thread(target=lambda: osc_server.serve_forever(2),
                      daemon=True).start()
-    # while True:
-    #     owo_suit.ping_muscles()
+    threading.Thread(target=owo_suit.watch,
+                     daemon=True).start()
     input("Press any key to exit\n")
 except KeyboardInterrupt:
     print("Shutting Down...\n")
