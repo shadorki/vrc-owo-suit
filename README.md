@@ -2,6 +2,11 @@
 
 A python application for VRChat players to use OWO Suits in game
 
+## Demo
+
+https://user-images.githubusercontent.com/52118958/216754614-c2474c91-88a2-465a-9aa3-b570dde76173.mp4
+
+
 ## Table of Contents
 
 - [Installation](#installation)
