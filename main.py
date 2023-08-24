@@ -19,7 +19,7 @@ try:
                      daemon=True).start()
     threading.Thread(target=owo_suit.watch,
                      daemon=True).start()
-    input("Press any key to exit!\n")
+    input("Press any key to exit\n")
 except KeyboardInterrupt:
     print("Shutting Down...\n")
 except OSError:
