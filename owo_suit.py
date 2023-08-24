@@ -13,11 +13,13 @@ from OWOGame import OWO, Sensation, SensationsFactory, Muscle, MicroSensation, C
 
 
 class OWOSuit:
-    def __init__(self, owo_ip: str):
+    def __init__(self, owo_ip: str, frequency: int, intensity: int):
         self.owo_ip: str = owo_ip
+        self.intensity: int = intensity
+        self.frequency: int = frequency
         self.active_muscles: set = set()
         self.touch_sensation: MicroSensation = SensationsFactory.Create(
-            100, 20, 25, 0, 0, 0)
+            self.frequency, 10, self.intensity, 0, 0, 0)
         self.osc_parameters: dict[str, Muscle] = {
             "/avatar/parameters/owo_suit_Pectoral_R": Muscle.Pectoral_R,
             "/avatar/parameters/owo_suit_Pectoral_L": Muscle.Pectoral_L,
@@ -41,6 +43,7 @@ class OWOSuit:
         while True:
             if len(self.active_muscles) > 0:
                 OWO.Send(self.touch_sensation, list(self.active_muscles))
+                print("\033[SSending sensation to: ", self.active_muscles)
             else:
                 OWO.Stop()
             time.sleep(.3)
@@ -65,7 +68,7 @@ class OWOSuit:
     def connect(self) -> bool:
         if self.owo_ip != "":
             OWO.Connect(self.owo_ip)
-            if OWO.IsConnected:
+            if OWO.ConnectionState == ConnectionState.Connected:
                 return True
         OWO.AutoConnect()
         return OWO.ConnectionState == ConnectionState.Connected
