@@ -8,13 +8,12 @@ import config
 try:
     print("Starting OWO Suit...")
     c = config.get()
-    owo_suit = OWOSuit(c.owo_ip)
+    owo_suit = OWOSuit(c.owo_ip, c.frequency, c.intensity)
     owo_suit.init()
     dispatcher = Dispatcher()
     owo_suit.map_parameters(dispatcher)
     osc_server = ThreadingOSCUDPServer(
         ("127.0.0.1", c.server_port), dispatcher, asyncio.new_event_loop())
-
     threading.Thread(target=lambda: osc_server.serve_forever(2),
                      daemon=True).start()
     threading.Thread(target=owo_suit.watch,
