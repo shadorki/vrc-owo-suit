@@ -3,7 +3,7 @@ from pythonosc import dispatcher
 import time
 import clr
 clr.AddReference('./owo/OWO')
-from OWOHaptic import OWO, Sensation, Muscle
+from OWOGame import OWO, Sensation, SensationsFactory, Muscle, MicroSensation, ConnectionState
 
 # Sensations that are predefined
 # 'Ball', 'GunRecoil', 'Bleed', 'Insvects', 'Wind', 'Dart', 'MachineGunRecoil', 'Punch', 'DaggerEntry', 'DaggerMovement', 'FastDriving', 'IdleSpeed', 'InsectBites', 'ShotEntry', 'ShotExit', 'Shot', 'Dagger', 'Hug', 'HeartBeat'
@@ -16,8 +16,8 @@ class OWOSuit:
     def __init__(self, owo_ip: str):
         self.owo_ip: str = owo_ip
         self.active_muscles: set = set()
-        self.touch_sensation: Sensation = Sensation.Create(
-            100, 10, 25, 0, 0, 0)
+        self.touch_sensation: MicroSensation = SensationsFactory.Create(
+            100, 20, 25, 0, 0, 0)
         self.osc_parameters: dict[str, Muscle] = {
             "/avatar/parameters/owo_suit_Pectoral_R": Muscle.Pectoral_R,
             "/avatar/parameters/owo_suit_Pectoral_L": Muscle.Pectoral_L,
@@ -42,7 +42,7 @@ class OWOSuit:
             if len(self.active_muscles) > 0:
                 OWO.Send(self.touch_sensation, list(self.active_muscles))
             else:
-                OWO.StopSensation()
+                OWO.Stop()
             time.sleep(.3)
 
     def on_collission_enter(self, address: str, *args) -> None:
@@ -67,8 +67,8 @@ class OWOSuit:
             OWO.Connect(self.owo_ip)
             if OWO.IsConnected:
                 return True
-        OWO.AutoConnectAsync()
-        return OWO.IsConnected
+        OWO.AutoConnect()
+        return OWO.ConnectionState == ConnectionState.Connected
 
     def init(self) -> None:
         ok = self.connect()
