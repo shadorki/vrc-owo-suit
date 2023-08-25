@@ -29,7 +29,9 @@ Head over to the [Releases](https://github.com/uzair-ashraf/vrc-owo-suit/release
    ```json
    {
       "server_port": 9001,
-      "owo_ip": "YOUR OWO SUIT'S IP ADDRESS HERE"
+      "owo_ip": "",
+      "frequency": 100,
+      "intensity": 20
    }
    ```
 
