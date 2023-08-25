@@ -49,6 +49,11 @@ class OWOSuit:
             time.sleep(.3)
 
     def on_collission_enter(self, address: str, *args) -> None:
+        if address == "/avatar/parameters/owo_intensity":
+            self.intensity = int(args[0]*100)
+            print("Set intensity to: "+str(self.intensity))
+            self.touch_sensation = SensationsFactory.Create(
+                self.frequency, 10, self.intensity, 0, 0, 0)
         if not address in self.osc_parameters:
             return
         if len(args) != 1:
