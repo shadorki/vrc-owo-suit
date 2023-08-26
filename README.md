@@ -117,6 +117,8 @@ This doc assumes you have a Unity Package with an avatar already set up to be pu
          <img src="./img/screenshot-arm.png">
       </p>
 
+   - (OPTIONAL) Add a parameter called "owo_intensity" to the avatar parameters and also add it to the menu with a radial control.
+
 1. Every avatar is different in size therefore every avatar's collissions will be different. Go through each game object starting with `owo_suit` and adjust the `VRC Contact Receiver` script to change the size of the capsule collider. This is where the detection will occur, so you can make the area for each collision bigger or smaller if you'd like.
 
    In the example below you can see that this contact is for the right abdomen. I adjusted the capsule size to map out the right portion of the abdomen. 
