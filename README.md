@@ -29,7 +29,9 @@ Head over to the [Releases](https://github.com/uzair-ashraf/vrc-owo-suit/release
    ```json
    {
       "server_port": 9001,
-      "owo_ip": "YOUR OWO SUIT'S IP ADDRESS HERE"
+      "owo_ip": "",
+      "frequency": 100,
+      "intensity": 20
    }
    ```
 
@@ -114,6 +116,8 @@ This doc assumes you have a Unity Package with an avatar already set up to be pu
       <p align="center">
          <img src="./img/screenshot-arm.png">
       </p>
+
+   - (OPTIONAL) Add a parameter called "owo_intensity" to the avatar parameters and also add it to the menu with a radial control.
 
 1. Every avatar is different in size therefore every avatar's collissions will be different. Go through each game object starting with `owo_suit` and adjust the `VRC Contact Receiver` script to change the size of the capsule collider. This is where the detection will occur, so you can make the area for each collision bigger or smaller if you'd like.
 

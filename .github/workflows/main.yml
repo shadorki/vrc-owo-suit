@@ -1,0 +1,74 @@
+name: Release
+on:
+  push:
+    tags:
+      - "*.*.*"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  Build:
+    name: Build release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.10.9
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip pyinstaller
+          pip install -r requirements.txt
+      - name: Build with pyinstaller
+        run: pyinstaller --hidden-import=clr --add-binary "./owo/OWO.dll;owo" --onefile --distpath ./build --name=vrc-owo-suit main.py
+
+      - name: Deploy EXE
+        uses: actions/upload-artifact@v3
+        with:
+          name: vrc-owo-suit
+          path: ./build/vrc-owo-suit.exe
+          if-no-files-found: error
+
+      - name: Deploy Unity Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: OWO_Suit
+          path: ./OWO_Suit.unitypackage
+          if-no-files-found: error
+        
+
+  release:
+    needs: build
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: vrc-owo-suit
+          path: artifact/vrc-owo-suit
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: OWO_Suit
+          path: artifact/OWO_Suit
+      
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: artifact
+
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            artifact/vrc-owo-suit/vrc-owo-suit.exe
+            artifact/OWO_Suit/OWO_Suit.unitypackage
