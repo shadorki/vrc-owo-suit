@@ -41,6 +41,8 @@ class OWOSuit:
 
     def watch(self) -> None:
         while True:
+            if not self.is_connected():
+                self.retry_connect()
             if len(self.active_muscles) > 0:
                 OWO.Send(self.touch_sensation, list(self.active_muscles))
                 print("\033[SSending sensation to: ", self.active_muscles)
@@ -73,16 +75,22 @@ class OWOSuit:
     def connect(self) -> bool:
         if self.owo_ip != "":
             OWO.Connect(self.owo_ip)
-            if OWO.ConnectionState == ConnectionState.Connected:
+            if self.is_connected():
                 return True
         OWO.AutoConnect()
+        return self.is_connected()
+
+    def is_connected(self) -> bool:
         return OWO.ConnectionState == ConnectionState.Connected
 
-    def init(self) -> None:
+    def retry_connect(self) -> None:
         ok = self.connect()
         while not ok:
             print(
                 f'Failed to connect to suit, trying again... IP: {self.owo_ip or "N/A"}')
             ok = self.connect()
             time.sleep(1)
+
+    def init(self) -> None:
+        self.retry_connect()
         print("Successfully connected to OWO suit!")
