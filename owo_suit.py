@@ -2,7 +2,8 @@
 from pythonosc import dispatcher
 import time
 import clr
-clr.AddReference('./owo/OWO')
+from System.Reflection import Assembly
+Assembly.UnsafeLoadFrom('./owo/OWO.dll')
 from OWOGame import OWO, Sensation, SensationsFactory, Muscle, MicroSensation, ConnectionState
 
 # Sensations that are predefined
