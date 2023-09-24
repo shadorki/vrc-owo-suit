@@ -1,5 +1,6 @@
 # pyright: reportMissingImports=false
 from pythonosc import dispatcher
+from event import Event
 from gui import Gui
 import params
 import time
@@ -7,12 +8,6 @@ import clr
 from System.Reflection import Assembly
 Assembly.UnsafeLoadFrom('./owo/OWO.dll')
 from OWOGame import OWO, Sensation, SensationsFactory, Muscle, MicroSensation, ConnectionState
-
-# Sensations that are predefined
-# 'Ball', 'GunRecoil', 'Bleed', 'Insvects', 'Wind', 'Dart', 'MachineGunRecoil', 'Punch', 'DaggerEntry', 'DaggerMovement', 'FastDriving', 'IdleSpeed', 'InsectBites', 'ShotEntry', 'ShotExit', 'Shot', 'Dagger', 'Hug', 'HeartBeat'
-
-# Muscle Properties
-# 'Pectoral_R', 'Pectoral_L', 'Abdominal_R', 'Abdominal_L', 'Arm_R', 'Arm_L', 'Dorsal_R', 'Dorsal_L', 'Lumbar_R', 'Lumbar_L', 'AllMuscles', 'BackMuscles', 'FrontMuscles', 'FrontMusclesWithoutArms', 'Arms', 'Dorsals', 'Pectorals', 'Abdominals'
 
 
 class OWOSuit:
@@ -36,6 +31,8 @@ class OWOSuit:
             params.owo_suit_Lumbar_R: Muscle.Lumbar_R,
             params.owo_suit_Lumbar_L: Muscle.Lumbar_L,
         }
+        self.is_connecting = False
+        self.on_connection_state_change = Event()
 
     def ping_muscles(self) -> None:
         for address, muscle in self.osc_parameters.items():
@@ -83,7 +80,20 @@ class OWOSuit:
     def is_connected(self) -> bool:
         return OWO.ConnectionState == ConnectionState.Connected
 
+    def dispatch_connection_state_change(self) -> None:
+        if self.is_connecting:
+            self.on_connection_state_change.dispatch('CONNECTING')
+            return
+        if self.is_connected():
+            self.on_connection_state_change.dispatch('CONNECTED')
+            return
+        self.on_connection_state_change.dispatch('DISCONNECTED')
+
     def retry_connect(self, *args) -> None:
+        if self.is_connecting:
+            return
+        self.is_connecting = True
+        self.dispatch_connection_state_change()
         ok = self.connect()
         while not ok:
             self.gui.print_terminal(
@@ -92,6 +102,9 @@ class OWOSuit:
                 f'Failed to connect to suit, trying again... IP: {self.owo_ip or "N/A"}')
             ok = self.connect()
             time.sleep(1)
+        self.is_connecting = False
+        self.dispatch_connection_state_change()
 
     def init(self) -> None:
         self.gui.on_connect_clicked.add_listener(self.retry_connect)
+        self.on_connection_state_change.add_listener(self.gui.handle_connecting_state_change)

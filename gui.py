@@ -84,6 +84,20 @@ class Gui:
     def handle_contribute_callback(self, sender, app_data):
         webbrowser.open("https://github.com/uzair-ashraf/vrc-owo-suit")
 
+    def handle_connecting_state_change(self, next_state):
+        if next_state == "CONNECTING":
+            dpg.configure_item(
+                self.elements[Element.CONNECT_BUTTON], label="Connecting...", enabled=False)
+            return
+        elif next_state == "CONNECTED":
+            dpg.configure_item(
+                self.elements[Element.CONNECT_BUTTON], label="Connected!", enabled=False)
+            return
+        elif next_state == "DISCONNECTED":
+            dpg.configure_item(
+                self.elements[Element.CONNECT_BUTTON], label="Connect", enabled=True)
+            return
+
     def create_centered_image(self, tag: str, path: str):
         image_width, image_height, _, data = dpg.load_image(path)
 
@@ -111,7 +125,6 @@ class Gui:
             self.elements[Element.TERMINAL_WINDOW_INPUT], text + '\n' + value)
 
     def on_clear_console(self, *args) -> None:
-        print("clicked")
         dpg.set_value(
             self.elements[Element.TERMINAL_WINDOW_INPUT], "Cleared.")
 
