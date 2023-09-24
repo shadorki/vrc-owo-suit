@@ -1,3 +1,4 @@
+import params
 import config
 import webbrowser
 from event import Event
@@ -62,6 +63,27 @@ class Gui:
             Element.CONNECT_ON_STARTUP_CHECKBOX: None,
             Element.CONTRIBUTE_BUTTON: None,
         }
+        self.element_to_config_key = {
+            Element.SERVER_PORT_NUMBER_INPUT: "server_port",
+            Element.IP_ADDRESS_INPUT: "owo_ip",
+            Element.DETECT_IP_ADDRESS_CHECKBOX: "should_detect_ip",
+            Element.CONNECT_ON_STARTUP_CHECKBOX: "should_connect_on_startup",
+            Element.FREQUENCY_SETTING_SLIDER: "frequency",
+            "intensities": {
+                Element.LEFT_PECTORAL_SETTING_SLIDER: params.owo_suit_Pectoral_L,
+                Element.RIGHT_PECTORAL_SETTING_SLIDER: params.owo_suit_Pectoral_R,
+                Element.LEFT_ABDOMINAL_SETTING_SLIDER: params.owo_suit_Abdominal_L,
+                Element.RIGHT_ABDOMINAL_SETTING_SLIDER: params.owo_suit_Abdominal_R,
+                Element.LEFT_ARM_SETTING_SLIDER: params.owo_suit_Arm_L,
+                Element.RIGHT_ARM_SETTING_SLIDER: params.owo_suit_Arm_R,
+                Element.LEFT_DORSAL_SETTING_SLIDER: params.owo_suit_Dorsal_L,
+                Element.RIGHT_DORSAL_SETTING_SLIDER: params.owo_suit_Dorsal_R,
+                Element.LEFT_LUMBAR_SETTING_SLIDER: params.owo_suit_Lumbar_L,
+                Element.RIGHT_LUMBAR_SETTING_SLIDER: params.owo_suit_Lumbar_R,
+            }
+
+        }
+        self.ids_to_elements = None
 
     def handle_connect_callback(self, sender, app_data):
         self.on_connect_clicked.dispatch(sender, app_data)
@@ -69,8 +91,9 @@ class Gui:
     def handle_disconnect_callback(self, sender, app_data):
         self.on_disconnect_clicked.dispatch(sender, app_data)
 
-    def handle_save_settings_callback(self, sender, app_data):
-        self.on_save_settings_clicked.dispatch(sender, app_data)
+    def handle_save_settings_callback(self):
+        self.config.write_config_to_disk()
+        self.print_terminal("Settings Saved!")
 
     def handle_clear_console_callback(self, sender, app_data):
         self.on_clear_console_clicked.dispatch(sender, app_data)
@@ -80,6 +103,19 @@ class Gui:
         value = 1
         # figure out how to get these values from sender and app data
         self.on_intensity_change.dispatch(parameter, value)
+
+    def handle_input_change(self, sender, app_data):
+        element = self.ids_to_elements.get(sender)
+        config_key = self.element_to_config_key.get(element)
+        # this implies its an intensity
+        if config_key is None:
+            intensities_map = self.element_to_config_key.get("intensities")
+            config_key = intensities_map.get(element)
+            intensities = self.config.get_by_key("intensities")
+            intensities[config_key] = app_data
+            self.config.update("intensities", intensities)
+            return
+        self.config.update(config_key, app_data)
 
     def handle_contribute_callback(self, sender, app_data):
         webbrowser.open("https://github.com/uzair-ashraf/vrc-owo-suit")
@@ -132,9 +168,89 @@ class Gui:
         self.on_clear_console_clicked.add_listener(self.on_clear_console)
 
     def create_owo_suit_ip_address_input(self):
+        owo_ip = self.config.get_by_key("owo_ip") or ""
         dpg.add_text("OWO Suit IP Address")
-        self.elements[Element.IP_ADDRESS_INPUT] = dpg.add_input_text(
-            width=-1)
+        self.elements[Element.IP_ADDRESS_INPUT] = dpg.add_input_text(default_value=owo_ip,
+                                                                     width=-1, callback=self.handle_input_change)
+
+    def create_detect_address_checkbox(self):
+        should_detect_ip = self.config.get_by_key("should_detect_ip")
+        self.elements[Element.DETECT_IP_ADDRESS_CHECKBOX] = dpg.add_checkbox(
+            label="Automatically Detect IP Address", default_value=should_detect_ip, callback=self.handle_input_change)
+
+    def create_server_port_input(self):
+        server_port = self.config.get_by_key("server_port") or 9001
+        dpg.add_text("Server Port Number")
+        self.elements[Element.SERVER_PORT_NUMBER_INPUT] = dpg.add_input_int(default_value=server_port,
+                                                                            width=-1, callback=self.handle_input_change)
+
+    def create_frequency_slider(self):
+        frequency = self.config.get_by_key("frequency")
+        dpg.add_text("Frequency Settings")
+        self.elements[Element.FREQUENCY_SETTING_SLIDER] = dpg.add_slider_int(
+            min_value=0,
+            max_value=100,
+            width=-1,
+            default_value=frequency,
+            callback=self.handle_input_change
+        )
+
+    def create_intensity_settings(self):
+        dpg.add_text("Intensity Settings")
+        element_labels = {
+            Element.LEFT_PECTORAL_SETTING_SLIDER: "Left Pectoral",
+            Element.RIGHT_PECTORAL_SETTING_SLIDER: "Right Pectoral",
+            Element.LEFT_ABDOMINAL_SETTING_SLIDER: "Left Abdominal",
+            Element.RIGHT_ABDOMINAL_SETTING_SLIDER: "Right Abdominal",
+            Element.LEFT_ARM_SETTING_SLIDER: "Left Arm",
+            Element.RIGHT_ARM_SETTING_SLIDER: "Right Arm",
+            Element.LEFT_DORSAL_SETTING_SLIDER: "Left Dorsal",
+            Element.RIGHT_DORSAL_SETTING_SLIDER: "Right Dorsal",
+            Element.LEFT_LUMBAR_SETTING_SLIDER: "Left Lumbar",
+            Element.RIGHT_LUMBAR_SETTING_SLIDER: "Right Lumbar",
+        }
+        for element, label in element_labels.items():
+            self.create_intensity_slider(element, label)
+
+    def create_intensity_slider(self, element: Element, label: str):
+        intensities_map = self.element_to_config_key.get("intensities")
+        config_key = intensities_map.get(element)
+        intensities = self.config.get_by_key("intensities")
+        default_value = intensities.get(config_key) or 0
+        self.elements[element] = dpg.add_slider_int(default_value=default_value, min_value=0, width=-120,
+                                                    max_value=100, label=label, callback=self.handle_input_change)
+
+    def create_logs_output(self):
+        dpg.add_text("Logs")
+        self.elements[Element.TERMINAL_WINDOW_INPUT] = dpg.add_input_text(
+            multiline=True, readonly=True, height=90, width=-1)
+
+    def create_button_group(self):
+        with dpg.group(horizontal=True):
+            self.elements[Element.CONNECT_BUTTON] = dpg.add_button(label="Connect",
+                                                                   callback=self.handle_connect_callback)
+            self.elements[Element.SAVE_SETTINGS_BUTTON] = dpg.add_button(label="Save Settings",
+                                                                         callback=self.handle_save_settings_callback)
+            self.elements[Element.CLEAR_CONSOLE_BUTTON] = dpg.add_button(label="Clear Console",
+                                                                         callback=self.handle_clear_console_callback)
+
+    def create_connect_startup_checkbox(self):
+        should_connect_on_startup = self.config.get_by_key(
+            "should_connect_on_startup"
+        )
+        self.elements[Element.CONNECT_ON_STARTUP_CHECKBOX] = dpg.add_checkbox(
+            default_value=should_connect_on_startup,
+            label="Automatically Connect on Startup",
+            callback=self.handle_input_change
+        )
+
+    def create_footer(self):
+        with dpg.group(width=-1):
+            self.elements[Element.CONTRIBUTE_BUTTON] = dpg.add_button(
+                label="\t\t\t\t  Created by Shadoki.\nThis application is not affiliated with VRChat or OWO.\n\t\t\t\t  Want to contribute?",
+                width=-1,
+                callback=self.handle_contribute_callback
+            )
 
     def init(self):
         dpg.create_context()
@@ -143,81 +259,29 @@ class Gui:
             handle_centered_image = self.create_centered_image(
                 "logo", self.logo_path)
             dpg.add_spacer(height=20)
-
-            dpg.add_text("OWO Suit IP Address")
-            self.elements[Element.IP_ADDRESS_INPUT] = dpg.add_input_text(
-                width=-1)
-            self.elements[Element.DETECT_IP_ADDRESS_CHECKBOX] = dpg.add_checkbox(
-                label="Automatically Detect IP Address")
+            self.create_owo_suit_ip_address_input()
+            self.create_detect_address_checkbox()
             dpg.add_spacer(height=20)
-
-            dpg.add_text("Server Port Number")
-            self.elements[Element.SERVER_PORT_NUMBER_INPUT] = dpg.add_input_int(
-                width=-1)
+            self.create_server_port_input()
             dpg.add_spacer(height=20)
-
-            # Sliders with labels coming before
-            dpg.add_text("Frequency Settings")
-            self.elements[Element.FREQUENCY_SETTING_SLIDER] = dpg.add_slider_int(
-                min_value=0, max_value=100, width=-1)
+            self.create_frequency_slider()
             dpg.add_spacer(height=20)
-
-            dpg.add_text("Intensity Settings")
-            with dpg.group():
-                self.elements[Element.LEFT_PECTORAL_SETTING_SLIDER] = dpg.add_slider_int(min_value=0, width=-120,
-                                                                                         max_value=100, label="Left Pectoral")
-                self.elements[Element.RIGHT_PECTORAL_SETTING_SLIDER] = dpg.add_slider_int(min_value=0, width=-120,
-                                                                                          max_value=100, label="Right Pectoral")
-            with dpg.group():
-                self.elements[Element.LEFT_ABDOMINAL_SETTING_SLIDER] = dpg.add_slider_int(min_value=0, width=-120,
-                                                                                          max_value=100, label="Left Abdominal")
-                self.elements[Element.RIGHT_ABDOMINAL_SETTING_SLIDER] = dpg.add_slider_int(min_value=0, width=-120,
-                                                                                           max_value=100, label="Right Abdominal")
-            with dpg.group():
-                self.elements[Element.LEFT_ARM_SETTING_SLIDER] = dpg.add_slider_int(min_value=0, width=-120,
-                                                                                    max_value=100, label="Left Arm")
-                self.elements[Element.RIGHT_ARM_SETTING_SLIDER] = dpg.add_slider_int(min_value=0, width=-120,
-                                                                                     max_value=100, label="Right Arm")
-            with dpg.group():
-                self.elements[Element.LEFT_DORSAL_SETTING_SLIDER] = dpg.add_slider_int(min_value=0, width=-120,
-                                                                                       max_value=100, label="Left Dorsal")
-                self.elements[Element.RIGHT_DORSAL_SETTING_SLIDER] = dpg.add_slider_int(min_value=0, width=-120,
-                                                                                        max_value=100, label="Right Dorsal")
-            with dpg.group():
-                self.elements[Element.LEFT_LUMBAR_SETTING_SLIDER] = dpg.add_slider_int(min_value=0, width=-120,
-                                                                                       max_value=100, label="Left Lumbar")
-                self.elements[Element.RIGHT_LUMBAR_SETTING_SLIDER] = dpg.add_slider_int(min_value=0, width=-120,
-                                                                                        max_value=100, label="Right Lumbar")
+            self.create_intensity_settings()
             dpg.add_spacer(height=20)
-
-            # Terminal-like output
-            dpg.add_text("Logs")
-            self.elements[Element.TERMINAL_WINDOW_INPUT] = dpg.add_input_text(multiline=True, readonly=True,
-                                                                              default_value="...", height=90, width=-1)
-
+            self.create_logs_output()
             dpg.add_spacer(height=20)
-
-            with dpg.group(horizontal=True):
-                self.elements[Element.CONNECT_BUTTON] = dpg.add_button(label="Connect",
-                                                                       callback=self.handle_connect_callback)
-                self.elements[Element.SAVE_SETTINGS_BUTTON] = dpg.add_button(label="Save Settings",
-                                                                             callback=self.handle_save_settings_callback)
-                self.elements[Element.CLEAR_CONSOLE_BUTTON] = dpg.add_button(label="Clear Console",
-                                                                             callback=self.handle_clear_console_callback)
+            self.create_button_group()
             dpg.add_spacer(height=20)
-            self.elements[Element.CONNECT_ON_STARTUP_CHECKBOX] = dpg.add_checkbox(
-                label="Automatically Connect on Startup")
-
+            self.create_connect_startup_checkbox()
             dpg.add_spacer(height=20)
+            self.create_footer()
 
-            with dpg.group(width=-1):
-                self.elements[Element.CONTRIBUTE_BUTTON] = dpg.add_button(label="\t\t\t\t  Created by Shadoki.\nThis application is not affiliated with VRChat or OWO.\n\t\t\t\t  Want to contribute?",
-                                                                          width=-1, callback=self.handle_contribute_callback)
         self.add_listeners()
         dpg.create_viewport(title='VRChat OWO Suit',
                             width=self.window_width, height=self.window_height)
         dpg.set_viewport_resize_callback(handle_centered_image)
-
+        self.ids_to_elements = {
+            value: key for key, value in self.elements.items()}
         dpg.setup_dearpygui()
         dpg.show_viewport()
         dpg.set_primary_window("MAIN_WINDOW", True)

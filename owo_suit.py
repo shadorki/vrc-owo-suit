@@ -1,24 +1,21 @@
 # pyright: reportMissingImports=false
 from pythonosc import dispatcher
 from event import Event
+from config import Config
 from gui import Gui
 import params
 import time
 import clr
 from System.Reflection import Assembly
 Assembly.UnsafeLoadFrom('./owo/OWO.dll')
-from OWOGame import OWO, Sensation, SensationsFactory, Muscle, MicroSensation, ConnectionState
+from OWOGame import OWO, SensationsFactory, Muscle, ConnectionState
 
 
 class OWOSuit:
-    def __init__(self, owo_ip: str, frequency: int, intensity: int, gui: Gui):
-        self.owo_ip: str = owo_ip
-        self.intensity: int = intensity
-        self.frequency: int = frequency
+    def __init__(self, config: Config, gui: Gui):
+        self.config = config
         self.gui = gui
         self.active_muscles: set = set()
-        self.touch_sensation: MicroSensation = SensationsFactory.Create(
-            self.frequency, .1, self.intensity, 0, 0, 0)
         self.osc_parameters: dict[str, Muscle] = {
             params.owo_suit_Pectoral_R: Muscle.Pectoral_R,
             params.owo_suit_Pectoral_L: Muscle.Pectoral_L,
@@ -31,28 +28,29 @@ class OWOSuit:
             params.owo_suit_Lumbar_R: Muscle.Lumbar_R,
             params.owo_suit_Lumbar_L: Muscle.Lumbar_L,
         }
+        self.muscles_to_parameters: dict[Muscle, str] = {
+            value: key for key, value in self.osc_parameters.items()}
         self.is_connecting = False
         self.on_connection_state_change = Event()
 
-    def ping_muscles(self) -> None:
-        for address, muscle in self.osc_parameters.items():
-            print(f'Pinging {address}')
-            self.send_sensation(muscle)
-            time.sleep(.1)
+    def create_sensation(self, parameter: str):
+        frequency = self.config.get_by_key("frequency") or 50
+        intensities = self.config.get_by_key("intensities")
+        intensity = getattr(intensities, parameter, 0)
+        return SensationsFactory.Create(
+            frequency, .1, intensity, 0, 0, 0)
 
     def watch(self) -> None:
         while True:
             if len(self.active_muscles) > 0:
-                OWO.Send(self.touch_sensation, list(self.active_muscles))
-                print("\033[SSending sensation to: ", self.active_muscles)
+                for muscle in self.active_muscles:
+                    parameter = self.muscles_to_parameters.get(muscle)
+                    sensation = self.create_sensation(parameter)
+                    OWO.Send(sensation, muscle)
+                    print("\033[SSending sensation to: ", parameter)
             time.sleep(.1)
 
     def on_collission_enter(self, address: str, *args) -> None:
-        if address == "/avatar/parameters/owo_intensity":
-            self.intensity = int(args[0]*100)
-            print("Set intensity to: "+str(self.intensity))
-            self.touch_sensation = SensationsFactory.Create(
-                self.frequency, 10, self.intensity, 0, 0, 0)
         if not address in self.osc_parameters:
             return
         if len(args) != 1:
@@ -70,8 +68,9 @@ class OWOSuit:
         dispatcher.set_default_handler(self.on_collission_enter)
 
     def connect(self) -> bool:
-        if self.owo_ip != "":
-            OWO.Connect(self.owo_ip)
+        owo_ip = self.config.get_by_key("owo_ip")
+        if type(owo_ip) is str and owo_ip != "":
+            OWO.Connect(owo_ip)
             if self.is_connected():
                 return True
         OWO.AutoConnect()
@@ -97,9 +96,9 @@ class OWOSuit:
         ok = self.connect()
         while not ok:
             self.gui.print_terminal(
-                f'Failed to connect to suit, trying again... IP: {self.owo_ip or "N/A"}')
+                "Failed to connect to suit, trying again...")
             print(
-                f'Failed to connect to suit, trying again... IP: {self.owo_ip or "N/A"}')
+                "Failed to connect to suit, trying again...")
             ok = self.connect()
             time.sleep(1)
         self.is_connecting = False
@@ -107,4 +106,5 @@ class OWOSuit:
 
     def init(self) -> None:
         self.gui.on_connect_clicked.add_listener(self.retry_connect)
-        self.on_connection_state_change.add_listener(self.gui.handle_connecting_state_change)
+        self.on_connection_state_change.add_listener(
+            self.gui.handle_connecting_state_change)
