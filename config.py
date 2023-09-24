@@ -38,7 +38,6 @@ class Config:
     def read_config_from_disk(self):
         appdata_path = os.environ.get('LOCALAPPDATA')
         app_directory = os.path.join(appdata_path, self.APP_NAME)
-        print(app_directory)
         os.makedirs(app_directory, exist_ok=True)
         config_path = os.path.join(app_directory, 'config.json')
         if os.path.exists(config_path):

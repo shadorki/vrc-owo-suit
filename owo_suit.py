@@ -31,7 +31,17 @@ class OWOSuit:
         self.muscles_to_parameters: dict[Muscle, str] = {
             value: key for key, value in self.osc_parameters.items()}
         self.is_connecting = False
+        self.is_paused = False
         self.on_connection_state_change = Event()
+
+    def toggle_interactions(self):
+        self.is_paused = not self.is_paused
+        if self.is_paused:
+            self.gui.print_terminal(
+                "Interactions Paused.")
+        else:
+            self.gui.print_terminal(
+                "Interactions Continued.")
 
     def create_sensation(self, parameter: str):
         frequency = self.config.get_by_key("frequency") or 50
@@ -42,12 +52,11 @@ class OWOSuit:
 
     def watch(self) -> None:
         while True:
-            if len(self.active_muscles) > 0:
+            if len(self.active_muscles) > 0 and not self.is_paused:
                 for muscle in self.active_muscles:
                     parameter = self.muscles_to_parameters.get(muscle)
                     sensation = self.create_sensation(parameter)
                     OWO.Send(sensation, muscle)
-                    print("\033[SSending sensation to: ", parameter)
             time.sleep(.1)
 
     def on_collission_enter(self, address: str, *args) -> None:
@@ -96,9 +105,8 @@ class OWOSuit:
         ok = self.connect()
         while not ok:
             self.gui.print_terminal(
-                "Failed to connect to suit, trying again...")
-            print(
-                "Failed to connect to suit, trying again...")
+                "Failed to connect to suit, trying again..."
+            )
             ok = self.connect()
             time.sleep(1)
         self.is_connecting = False
@@ -106,5 +114,6 @@ class OWOSuit:
 
     def init(self) -> None:
         self.gui.on_connect_clicked.add_listener(self.retry_connect)
+        self.gui.on_toggle_interaction_clicked.add_listener(self.toggle_interactions)
         self.on_connection_state_change.add_listener(
             self.gui.handle_connecting_state_change)

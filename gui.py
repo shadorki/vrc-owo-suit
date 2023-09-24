@@ -25,6 +25,7 @@ class Element(Enum):
     CONNECT_BUTTON = auto()
     SAVE_SETTINGS_BUTTON = auto()
     CLEAR_CONSOLE_BUTTON = auto()
+    TOGGLES_INTERACTIONS_BUTTON = auto()
     CONNECT_ON_STARTUP_CHECKBOX = auto()
     CONTRIBUTE_BUTTON = auto()
 
@@ -36,11 +37,10 @@ class Gui:
         self.window_width = window_width
         self.window_height = window_height
         self.logo_path = logo_path
-        self.on_disconnect_clicked = Event()
         self.on_connect_clicked = Event()
         self.on_save_settings_clicked = Event()
         self.on_clear_console_clicked = Event()
-        self.on_intensity_change = Event()
+        self.on_toggle_interaction_clicked = Event()
         self.elements = {
             Element.IP_ADDRESS_INPUT: None,
             Element.DETECT_IP_ADDRESS_CHECKBOX: None,
@@ -60,6 +60,7 @@ class Gui:
             Element.CONNECT_BUTTON: None,
             Element.SAVE_SETTINGS_BUTTON: None,
             Element.CLEAR_CONSOLE_BUTTON: None,
+            Element.TOGGLES_INTERACTIONS_BUTTON: None,
             Element.CONNECT_ON_STARTUP_CHECKBOX: None,
             Element.CONTRIBUTE_BUTTON: None,
         }
@@ -88,9 +89,6 @@ class Gui:
     def handle_connect_callback(self, sender, app_data):
         self.on_connect_clicked.dispatch(sender, app_data)
 
-    def handle_disconnect_callback(self, sender, app_data):
-        self.on_disconnect_clicked.dispatch(sender, app_data)
-
     def handle_save_settings_callback(self):
         self.config.write_config_to_disk()
         self.print_terminal("Settings Saved!")
@@ -98,11 +96,8 @@ class Gui:
     def handle_clear_console_callback(self, sender, app_data):
         self.on_clear_console_clicked.dispatch(sender, app_data)
 
-    def handle_intensity_change(self, sender, app_data):
-        parameter = ""
-        value = 1
-        # figure out how to get these values from sender and app data
-        self.on_intensity_change.dispatch(parameter, value)
+    def handle_toggle_interactions_callback(self, sender, app_data):
+        self.on_toggle_interaction_clicked.dispatch()
 
     def handle_input_change(self, sender, app_data):
         element = self.ids_to_elements.get(sender)
@@ -233,6 +228,8 @@ class Gui:
                                                                          callback=self.handle_save_settings_callback)
             self.elements[Element.CLEAR_CONSOLE_BUTTON] = dpg.add_button(label="Clear Console",
                                                                          callback=self.handle_clear_console_callback)
+            self.elements[Element.TOGGLES_INTERACTIONS_BUTTON] = dpg.add_button(label="Toggle Interactions",
+                                                                                callback=self.handle_toggle_interactions_callback)
 
     def create_connect_startup_checkbox(self):
         should_connect_on_startup = self.config.get_by_key(
@@ -251,6 +248,13 @@ class Gui:
                 width=-1,
                 callback=self.handle_contribute_callback
             )
+
+    def validate_connect_on_startup(self):
+        should_connect_on_startup = self.config.get_by_key(
+            "should_connect_on_startup"
+        )
+        if should_connect_on_startup:
+            self.handle_connect_callback(Element.CONNECT_BUTTON, None)
 
     def init(self):
         dpg.create_context()
@@ -287,6 +291,7 @@ class Gui:
         dpg.set_primary_window("MAIN_WINDOW", True)
 
     def run(self):
+        self.validate_connect_on_startup()
         dpg.start_dearpygui()
 
     def cleanup(self):
