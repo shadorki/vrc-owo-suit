@@ -20,7 +20,7 @@ class OWOSuit:
         self.frequency: int = frequency
         self.active_muscles: set = set()
         self.touch_sensation: MicroSensation = SensationsFactory.Create(
-            self.frequency, 10, self.intensity, 0, 0, 0)
+            self.frequency, .1, self.intensity, 0, 0, 0)
         self.osc_parameters: dict[str, Muscle] = {
             "/avatar/parameters/owo_suit_Pectoral_R": Muscle.Pectoral_R,
             "/avatar/parameters/owo_suit_Pectoral_L": Muscle.Pectoral_L,
@@ -42,14 +42,10 @@ class OWOSuit:
 
     def watch(self) -> None:
         while True:
-            if not self.is_connected():
-                self.retry_connect()
             if len(self.active_muscles) > 0:
                 OWO.Send(self.touch_sensation, list(self.active_muscles))
                 print("\033[SSending sensation to: ", self.active_muscles)
-            else:
-                OWO.Stop()
-            time.sleep(.3)
+            time.sleep(.1)
 
     def on_collission_enter(self, address: str, *args) -> None:
         if address == "/avatar/parameters/owo_intensity":
@@ -91,7 +87,3 @@ class OWOSuit:
                 f'Failed to connect to suit, trying again... IP: {self.owo_ip or "N/A"}')
             ok = self.connect()
             time.sleep(1)
-
-    def init(self) -> None:
-        self.retry_connect()
-        print("Successfully connected to OWO suit!")
