@@ -3,12 +3,13 @@ import threading
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import ThreadingOSCUDPServer
 from owo_suit import OWOSuit
-import config
+from config import Config
 from gui import Gui
 
 try:
-    cfg = config.get()
-    gui = Gui(config=cfg, window_width = 550, window_height = 1040, logo_path="./img/logo.png")
+    cfg = Config()
+    cfg.init()
+    gui = Gui(config=cfg, window_width = 550, window_height = 1000, logo_path="./img/logo.png")
     gui.init()
     owo_suit = OWOSuit(cfg.owo_ip, cfg.frequency, cfg.intensity)
     dispatcher = Dispatcher()
