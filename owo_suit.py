@@ -1,62 +1,68 @@
 # pyright: reportMissingImports=false
 from pythonosc import dispatcher
+from event import Event
+from config import Config
+from gui import Gui
+import params
 import time
 import clr
+import os
+
+dll_path = os.path.abspath(os.path.join(os.path.dirname(__file__), './owo/OWO.dll'))
 from System.Reflection import Assembly
-Assembly.UnsafeLoadFrom('./owo/OWO.dll')
-from OWOGame import OWO, Sensation, SensationsFactory, Muscle, MicroSensation, ConnectionState
-
-# Sensations that are predefined
-# 'Ball', 'GunRecoil', 'Bleed', 'Insvects', 'Wind', 'Dart', 'MachineGunRecoil', 'Punch', 'DaggerEntry', 'DaggerMovement', 'FastDriving', 'IdleSpeed', 'InsectBites', 'ShotEntry', 'ShotExit', 'Shot', 'Dagger', 'Hug', 'HeartBeat'
-
-# Muscle Properties
-# 'Pectoral_R', 'Pectoral_L', 'Abdominal_R', 'Abdominal_L', 'Arm_R', 'Arm_L', 'Dorsal_R', 'Dorsal_L', 'Lumbar_R', 'Lumbar_L', 'AllMuscles', 'BackMuscles', 'FrontMuscles', 'FrontMusclesWithoutArms', 'Arms', 'Dorsals', 'Pectorals', 'Abdominals'
+Assembly.UnsafeLoadFrom(dll_path)
+from OWOGame import OWO, SensationsFactory, Muscle, ConnectionState
 
 
 class OWOSuit:
-    def __init__(self, owo_ip: str, frequency: int, intensity: int):
-        self.owo_ip: str = owo_ip
-        self.intensity: int = intensity
-        self.frequency: int = frequency
+    def __init__(self, config: Config, gui: Gui):
+        self.config = config
+        self.gui = gui
         self.active_muscles: set = set()
-        self.touch_sensation: MicroSensation = SensationsFactory.Create(
-            self.frequency, 10, self.intensity, 0, 0, 0)
         self.osc_parameters: dict[str, Muscle] = {
-            "/avatar/parameters/owo_suit_Pectoral_R": Muscle.Pectoral_R,
-            "/avatar/parameters/owo_suit_Pectoral_L": Muscle.Pectoral_L,
-            "/avatar/parameters/owo_suit_Abdominal_R": Muscle.Abdominal_R,
-            "/avatar/parameters/owo_suit_Abdominal_L": Muscle.Abdominal_L,
-            "/avatar/parameters/owo_suit_Arm_R": Muscle.Arm_R,
-            "/avatar/parameters/owo_suit_Arm_L": Muscle.Arm_L,
-            "/avatar/parameters/owo_suit_Dorsal_R": Muscle.Dorsal_R,
-            "/avatar/parameters/owo_suit_Dorsal_L": Muscle.Dorsal_L,
-            "/avatar/parameters/owo_suit_Lumbar_R": Muscle.Lumbar_R,
-            "/avatar/parameters/owo_suit_Lumbar_L": Muscle.Lumbar_L,
+            params.owo_suit_Pectoral_R: Muscle.Pectoral_R,
+            params.owo_suit_Pectoral_L: Muscle.Pectoral_L,
+            params.owo_suit_Abdominal_R: Muscle.Abdominal_R,
+            params.owo_suit_Abdominal_L: Muscle.Abdominal_L,
+            params.owo_suit_Arm_R: Muscle.Arm_R,
+            params.owo_suit_Arm_L: Muscle.Arm_L,
+            params.owo_suit_Dorsal_R: Muscle.Dorsal_R,
+            params.owo_suit_Dorsal_L: Muscle.Dorsal_L,
+            params.owo_suit_Lumbar_R: Muscle.Lumbar_R,
+            params.owo_suit_Lumbar_L: Muscle.Lumbar_L,
         }
+        self.muscles_to_parameters: dict[Muscle, str] = {
+            value: key for key, value in self.osc_parameters.items()}
+        self.is_connecting = False
+        self.is_paused = False
+        self.on_connection_state_change = Event()
 
-    def ping_muscles(self) -> None:
-        for address, muscle in self.osc_parameters.items():
-            print(f'Pinging {address}')
-            self.send_sensation(muscle)
-            time.sleep(.1)
+    def toggle_interactions(self):
+        self.is_paused = not self.is_paused
+        if self.is_paused:
+            self.gui.print_terminal(
+                "Interactions Paused.")
+        else:
+            self.gui.print_terminal(
+                "Interactions Continued.")
+
+    def create_sensation(self, parameter: str):
+        frequency = self.config.get_by_key("frequency") or 50
+        intensities = self.config.get_by_key("intensities")
+        intensity = getattr(intensities, parameter, 0)
+        return SensationsFactory.Create(
+            frequency, .1, intensity, 0, 0, 0)
 
     def watch(self) -> None:
         while True:
-            if not self.is_connected():
-                self.retry_connect()
-            if len(self.active_muscles) > 0:
-                OWO.Send(self.touch_sensation, list(self.active_muscles))
-                print("\033[SSending sensation to: ", self.active_muscles)
-            else:
-                OWO.Stop()
-            time.sleep(.3)
+            if len(self.active_muscles) > 0 and not self.is_paused:
+                for muscle in self.active_muscles:
+                    parameter = self.muscles_to_parameters.get(muscle)
+                    sensation = self.create_sensation(parameter)
+                    OWO.Send(sensation, muscle)
+            time.sleep(.1)
 
     def on_collission_enter(self, address: str, *args) -> None:
-        if address == "/avatar/parameters/owo_intensity":
-            self.intensity = int(args[0]*100)
-            print("Set intensity to: "+str(self.intensity))
-            self.touch_sensation = SensationsFactory.Create(
-                self.frequency, 10, self.intensity, 0, 0, 0)
         if not address in self.osc_parameters:
             return
         if len(args) != 1:
@@ -74,8 +80,9 @@ class OWOSuit:
         dispatcher.set_default_handler(self.on_collission_enter)
 
     def connect(self) -> bool:
-        if self.owo_ip != "":
-            OWO.Connect(self.owo_ip)
+        owo_ip = self.config.get_by_key("owo_ip")
+        if type(owo_ip) is str and owo_ip != "":
+            OWO.Connect(owo_ip)
             if self.is_connected():
                 return True
         OWO.AutoConnect()
@@ -84,14 +91,32 @@ class OWOSuit:
     def is_connected(self) -> bool:
         return OWO.ConnectionState == ConnectionState.Connected
 
-    def retry_connect(self) -> None:
+    def dispatch_connection_state_change(self) -> None:
+        if self.is_connecting:
+            self.on_connection_state_change.dispatch('CONNECTING')
+            return
+        if self.is_connected():
+            self.on_connection_state_change.dispatch('CONNECTED')
+            return
+        self.on_connection_state_change.dispatch('DISCONNECTED')
+
+    def retry_connect(self, *args) -> None:
+        if self.is_connecting:
+            return
+        self.is_connecting = True
+        self.dispatch_connection_state_change()
         ok = self.connect()
         while not ok:
-            print(
-                f'Failed to connect to suit, trying again... IP: {self.owo_ip or "N/A"}')
+            self.gui.print_terminal(
+                "Failed to connect to suit, trying again..."
+            )
             ok = self.connect()
             time.sleep(1)
+        self.is_connecting = False
+        self.dispatch_connection_state_change()
 
     def init(self) -> None:
-        self.retry_connect()
-        print("Successfully connected to OWO suit!")
+        self.gui.on_connect_clicked.add_listener(self.retry_connect)
+        self.gui.on_toggle_interaction_clicked.add_listener(self.toggle_interactions)
+        self.on_connection_state_change.add_listener(
+            self.gui.handle_connecting_state_change)
