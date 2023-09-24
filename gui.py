@@ -23,6 +23,7 @@ class Element(Enum):
     TERMINAL_WINDOW_INPUT = auto()
     CONNECT_BUTTON = auto()
     SAVE_SETTINGS_BUTTON = auto()
+    CLEAR_CONSOLE_BUTTON = auto()
     CONNECT_ON_STARTUP_CHECKBOX = auto()
     CONTRIBUTE_BUTTON = auto()
 
@@ -37,6 +38,7 @@ class Gui:
         self.on_disconnect_clicked = Event()
         self.on_connect_clicked = Event()
         self.on_save_settings_clicked = Event()
+        self.on_clear_console_clicked = Event()
         self.on_intensity_change = Event()
         self.elements = {
             Element.IP_ADDRESS_INPUT: None,
@@ -56,6 +58,7 @@ class Gui:
             Element.TERMINAL_WINDOW_INPUT: None,
             Element.CONNECT_BUTTON: None,
             Element.SAVE_SETTINGS_BUTTON: None,
+            Element.CLEAR_CONSOLE_BUTTON: None,
             Element.CONNECT_ON_STARTUP_CHECKBOX: None,
             Element.CONTRIBUTE_BUTTON: None,
         }
@@ -68,6 +71,9 @@ class Gui:
 
     def handle_save_settings_callback(self, sender, app_data):
         self.on_save_settings_clicked.dispatch(sender, app_data)
+
+    def handle_clear_console_callback(self, sender, app_data):
+        self.on_clear_console_clicked.dispatch(sender, app_data)
 
     def handle_intensity_change(self, sender, app_data):
         parameter = ""
@@ -98,6 +104,24 @@ class Gui:
             dpg.configure_item(width_spacer_id_2, width=int(spacer_width))
 
         return resize_callback
+
+    def print_terminal(self, text: str) -> None:
+        value = dpg.get_value(self.elements[Element.TERMINAL_WINDOW_INPUT])
+        dpg.set_value(
+            self.elements[Element.TERMINAL_WINDOW_INPUT], text + '\n' + value)
+
+    def on_clear_console(self, *args) -> None:
+        print("clicked")
+        dpg.set_value(
+            self.elements[Element.TERMINAL_WINDOW_INPUT], "Cleared.")
+
+    def add_listeners(self) -> None:
+        self.on_clear_console_clicked.add_listener(self.on_clear_console)
+
+    def create_owo_suit_ip_address_input(self):
+        dpg.add_text("OWO Suit IP Address")
+        self.elements[Element.IP_ADDRESS_INPUT] = dpg.add_input_text(
+            width=-1)
 
     def init(self):
         dpg.create_context()
@@ -160,12 +184,13 @@ class Gui:
 
             dpg.add_spacer(height=20)
 
-            # Connect button
             with dpg.group(horizontal=True):
                 self.elements[Element.CONNECT_BUTTON] = dpg.add_button(label="Connect",
                                                                        callback=self.handle_connect_callback)
                 self.elements[Element.SAVE_SETTINGS_BUTTON] = dpg.add_button(label="Save Settings",
                                                                              callback=self.handle_save_settings_callback)
+                self.elements[Element.CLEAR_CONSOLE_BUTTON] = dpg.add_button(label="Clear Console",
+                                                                             callback=self.handle_clear_console_callback)
             dpg.add_spacer(height=20)
             self.elements[Element.CONNECT_ON_STARTUP_CHECKBOX] = dpg.add_checkbox(
                 label="Automatically Connect on Startup")
@@ -175,7 +200,7 @@ class Gui:
             with dpg.group(width=-1):
                 self.elements[Element.CONTRIBUTE_BUTTON] = dpg.add_button(label="\t\t\t\t  Created by Shadoki.\nThis application is not affiliated with VRChat or OWO.\n\t\t\t\t  Want to contribute?",
                                                                           width=-1, callback=self.handle_contribute_callback)
-
+        self.add_listeners()
         dpg.create_viewport(title='VRChat OWO Suit',
                             width=self.window_width, height=self.window_height)
         dpg.set_viewport_resize_callback(handle_centered_image)
@@ -183,7 +208,6 @@ class Gui:
         dpg.setup_dearpygui()
         dpg.show_viewport()
         dpg.set_primary_window("MAIN_WINDOW", True)
-        print(self.elements.items())
 
     def run(self):
         dpg.start_dearpygui()

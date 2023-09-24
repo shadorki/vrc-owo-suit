@@ -1,5 +1,7 @@
 # pyright: reportMissingImports=false
 from pythonosc import dispatcher
+from gui import Gui
+import params
 import time
 import clr
 from System.Reflection import Assembly
@@ -14,24 +16,25 @@ from OWOGame import OWO, Sensation, SensationsFactory, Muscle, MicroSensation, C
 
 
 class OWOSuit:
-    def __init__(self, owo_ip: str, frequency: int, intensity: int):
+    def __init__(self, owo_ip: str, frequency: int, intensity: int, gui: Gui):
         self.owo_ip: str = owo_ip
         self.intensity: int = intensity
         self.frequency: int = frequency
+        self.gui = gui
         self.active_muscles: set = set()
         self.touch_sensation: MicroSensation = SensationsFactory.Create(
             self.frequency, .1, self.intensity, 0, 0, 0)
         self.osc_parameters: dict[str, Muscle] = {
-            "/avatar/parameters/owo_suit_Pectoral_R": Muscle.Pectoral_R,
-            "/avatar/parameters/owo_suit_Pectoral_L": Muscle.Pectoral_L,
-            "/avatar/parameters/owo_suit_Abdominal_R": Muscle.Abdominal_R,
-            "/avatar/parameters/owo_suit_Abdominal_L": Muscle.Abdominal_L,
-            "/avatar/parameters/owo_suit_Arm_R": Muscle.Arm_R,
-            "/avatar/parameters/owo_suit_Arm_L": Muscle.Arm_L,
-            "/avatar/parameters/owo_suit_Dorsal_R": Muscle.Dorsal_R,
-            "/avatar/parameters/owo_suit_Dorsal_L": Muscle.Dorsal_L,
-            "/avatar/parameters/owo_suit_Lumbar_R": Muscle.Lumbar_R,
-            "/avatar/parameters/owo_suit_Lumbar_L": Muscle.Lumbar_L,
+            params.owo_suit_Pectoral_R: Muscle.Pectoral_R,
+            params.owo_suit_Pectoral_L: Muscle.Pectoral_L,
+            params.owo_suit_Abdominal_R: Muscle.Abdominal_R,
+            params.owo_suit_Abdominal_L: Muscle.Abdominal_L,
+            params.owo_suit_Arm_R: Muscle.Arm_R,
+            params.owo_suit_Arm_L: Muscle.Arm_L,
+            params.owo_suit_Dorsal_R: Muscle.Dorsal_R,
+            params.owo_suit_Dorsal_L: Muscle.Dorsal_L,
+            params.owo_suit_Lumbar_R: Muscle.Lumbar_R,
+            params.owo_suit_Lumbar_L: Muscle.Lumbar_L,
         }
 
     def ping_muscles(self) -> None:
@@ -80,10 +83,15 @@ class OWOSuit:
     def is_connected(self) -> bool:
         return OWO.ConnectionState == ConnectionState.Connected
 
-    def retry_connect(self) -> None:
+    def retry_connect(self, *args) -> None:
         ok = self.connect()
         while not ok:
+            self.gui.print_terminal(
+                f'Failed to connect to suit, trying again... IP: {self.owo_ip or "N/A"}')
             print(
                 f'Failed to connect to suit, trying again... IP: {self.owo_ip or "N/A"}')
             ok = self.connect()
             time.sleep(1)
+
+    def init(self) -> None:
+        self.gui.on_connect_clicked.add_listener(self.retry_connect)
