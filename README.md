@@ -1,6 +1,6 @@
-# vrc-owo-suit
+# Disclaimer
 
-A python application for VRChat players to use OWO Suits in game
+This application is not affiliated with VRChat or OWO. By using this software you agree to not sue or get upsetti spaghetti with me if it breaks something. Use at your own risk.
 
 ## Table of Contents
 
