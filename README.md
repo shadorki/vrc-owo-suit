@@ -2,19 +2,13 @@
 
 A python application for VRChat players to use OWO Suits in game
 
-## Demo
-
-https://user-images.githubusercontent.com/52118958/216754614-c2474c91-88a2-465a-9aa3-b570dde76173.mp4
-
-
 ## Table of Contents
 
 - [Installation](#installation)
+- [Settings](#settings)
 - [Contributing](#contributing)
 
 ## Installation
-
----
 
 Head over to the [Releases](https://github.com/uzair-ashraf/vrc-owo-suit/releases) page to get the latest release.
 
@@ -22,27 +16,70 @@ Head over to the [Releases](https://github.com/uzair-ashraf/vrc-owo-suit/release
 
 1. Download the Unity Package.
 
-1. In the same directory where you put your executable, create a new file named `vrc-owo-suit.config.json`.
+1. Open your Unity Project, open the provided Unity package, and setup your avatar ([More Instructions](#setting-up-your-avatar) on this below)
 
-1. In `vrc-owo-suit.config.json` paste the following values:
+1. Run the executable
+   
+      <p align="center">
+         <img width="300px" src="./img/screenshot-app-1.png">
+      </p>
 
-   ```json
-   {
-      "server_port": 9001,
-      "owo_ip": "",
-      "frequency": 100,
-      "intensity": 20
-   }
-   ```
+1. Open the OWO app and head to Games > Scan Game 
 
-1. In your OWO Suit's application, copy the IP Address and replace the provided value in the `owo_ip` property.
+      <p align="center">
+         <img width="300px" src="./img/screenshot-owo-app-1.png">
+      </p>
 
+1. Click connect in the application
+   
+      <p align="center">
+         <img width="300px" src="./img/screenshot-app-2.png">
+      </p>
 
-1. Open your Unity Project and open the provided Unity package. ([More Instructions](#setting-up-your-avatar) on this below)
+1. Click connect in the OWO app
+   
+      <p align="center">
+         <img src="./img/screenshot-app-3.png">
+      </p>
+
+1. If everything works, both applications should say that they are connected!
+   
+      <p align="center">
+         <img src="./img/screenshot-app-4.png">
+      </p>
+
+## Settings
+
+1. OWO Suit IP Address
+   
+   You should leave this empty and leave the checkbox below checked, the OWO app can detect your suit fairly easily. I'm not sure what their usecase is for an IP address, maybe multiple suits on one machine?
+
+1. Server Port Number
+   
+   Leave this at `9001`, only change if you know what you're doing!
+   
+1. Frequency Settings
+   
+   I keep this at 100, I think it's for how abrupt the sensation is?
+   
+1. Intensity Settings
+   
+   When calibrating your suit with the OWO app you will set some limitations for each muscle group, to prevent from shocking yourself too much.
+   
+   When you enter VRChat, you'll realize that you have a higher tolerance for some muscles rather than others.
+
+   <p align="center">
+      <img src="./img/screenshot-app-5.png">
+   </p>
+
+   You can adjust the intensity settings in real time, and when you are done, you can click `Save Settings` to keep the app's settings for the next time you start it.
+
+   Also, if you're having trouble telling which muscle is active when you're feeling them, the intensity settings labels will change when your muscles are being interacted with.
+
+   In other words, if your `Left Pectoral` is touched, it will update in the UI as `[Left Pectoral]`
+   
 
 ## Contributing
-
----
 
 ### Requirements
 
