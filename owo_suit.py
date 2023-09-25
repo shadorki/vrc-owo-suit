@@ -6,8 +6,11 @@ from gui import Gui
 import params
 import time
 import clr
+import os
+
+dll_path = os.path.abspath(os.path.join(os.path.dirname(__file__), './owo/OWO.dll'))
 from System.Reflection import Assembly
-Assembly.UnsafeLoadFrom('./owo/OWO.dll')
+Assembly.UnsafeLoadFrom(dll_path)
 from OWOGame import OWO, SensationsFactory, Muscle, ConnectionState
 
 
