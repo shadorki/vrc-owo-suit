@@ -13,7 +13,6 @@ from System.Reflection import Assembly
 Assembly.UnsafeLoadFrom(dll_path)
 from OWOGame import OWO, SensationsFactory, Muscle, ConnectionState
 
-
 class OWOSuit:
     def __init__(self, config: Config, gui: Gui):
         self.config = config
@@ -33,6 +32,7 @@ class OWOSuit:
         }
         self.muscles_to_parameters: dict[Muscle, str] = {
             value: key for key, value in self.osc_parameters.items()}
+        self.has_connected_already = False
         self.is_connecting = False
         self.is_paused = False
         self.on_connection_state_change = Event()
@@ -49,18 +49,26 @@ class OWOSuit:
     def create_sensation(self, parameter: str):
         frequency = self.config.get_by_key("frequency") or 50
         intensities = self.config.get_by_key("intensities")
-        intensity = getattr(intensities, parameter, 0)
+        intensity = intensities.get(parameter)
         return SensationsFactory.Create(
-            frequency, .1, intensity, 0, 0, 0)
+            frequency, .3, intensity, 0, 0, 0)
 
     def watch(self) -> None:
         while True:
-            if len(self.active_muscles) > 0 and not self.is_paused:
-                for muscle in self.active_muscles:
-                    parameter = self.muscles_to_parameters.get(muscle)
-                    sensation = self.create_sensation(parameter)
-                    OWO.Send(sensation, muscle)
-            time.sleep(.1)
+            try:
+                if self.has_connected_already:
+                    if len(self.active_muscles) > 0 and not self.is_paused:
+                        for muscle in self.active_muscles:
+                            parameter = self.muscles_to_parameters.get(muscle)
+                            self.gui.handle_active_muscle_update(
+                                parameter=parameter)
+                            sensation = self.create_sensation(parameter)
+                            OWO.Send(sensation, muscle)
+                    if len(self.active_muscles) == 0:
+                        self.gui.handle_active_muscle_reset()
+            except RuntimeError:  # race condition for set changing during iteration
+                pass
+            time.sleep(.3)
 
     def on_collission_enter(self, address: str, *args) -> None:
         if not address in self.osc_parameters:
@@ -103,20 +111,22 @@ class OWOSuit:
     def retry_connect(self, *args) -> None:
         if self.is_connecting:
             return
+        self.gui.print_terminal("Connecting to suit...")
         self.is_connecting = True
         self.dispatch_connection_state_change()
         ok = self.connect()
         while not ok:
-            self.gui.print_terminal(
-                "Failed to connect to suit, trying again..."
-            )
             ok = self.connect()
             time.sleep(1)
         self.is_connecting = False
+        if self.is_connected():
+            self.gui.print_terminal("Connection complete!")
+        self.has_connected_already = True
         self.dispatch_connection_state_change()
 
     def init(self) -> None:
         self.gui.on_connect_clicked.add_listener(self.retry_connect)
-        self.gui.on_toggle_interaction_clicked.add_listener(self.toggle_interactions)
+        self.gui.on_toggle_interaction_clicked.add_listener(
+            self.toggle_interactions)
         self.on_connection_state_change.add_listener(
             self.gui.handle_connecting_state_change)

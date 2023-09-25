@@ -82,7 +82,21 @@ class Gui:
                 Element.LEFT_LUMBAR_SETTING_SLIDER: params.owo_suit_Lumbar_L,
                 Element.RIGHT_LUMBAR_SETTING_SLIDER: params.owo_suit_Lumbar_R,
             }
-
+        }
+        self.parameter_to_muscle_element = {
+            value: key for key, value in self.element_to_config_key.get('intensities').items()
+        }
+        self.element_labels = {
+            Element.LEFT_PECTORAL_SETTING_SLIDER: "Left Pectoral",
+            Element.RIGHT_PECTORAL_SETTING_SLIDER: "Right Pectoral",
+            Element.LEFT_ABDOMINAL_SETTING_SLIDER: "Left Abdominal",
+            Element.RIGHT_ABDOMINAL_SETTING_SLIDER: "Right Abdominal",
+            Element.LEFT_ARM_SETTING_SLIDER: "Left Arm",
+            Element.RIGHT_ARM_SETTING_SLIDER: "Right Arm",
+            Element.LEFT_DORSAL_SETTING_SLIDER: "Left Dorsal",
+            Element.RIGHT_DORSAL_SETTING_SLIDER: "Right Dorsal",
+            Element.LEFT_LUMBAR_SETTING_SLIDER: "Left Lumbar",
+            Element.RIGHT_LUMBAR_SETTING_SLIDER: "Right Lumbar",
         }
         self.ids_to_elements = None
 
@@ -95,6 +109,23 @@ class Gui:
 
     def handle_clear_console_callback(self, sender, app_data):
         self.on_clear_console_clicked.dispatch(sender, app_data)
+
+    def handle_active_muscle_update(self, parameter):
+        element_name = self.parameter_to_muscle_element.get(parameter)
+        element_id = self.elements[element_name]
+        existing_element_label = self.element_labels[element_name]
+        result = "[" + existing_element_label + "]"
+        dpg.configure_item(
+            element_id, label=result
+        )
+
+    def handle_active_muscle_reset(self):
+        for element_name in self.parameter_to_muscle_element.values():
+            element_id = self.elements[element_name]
+            label = self.element_labels[element_name]
+            dpg.configure_item(
+                element_id, label=label
+            )
 
     def handle_toggle_interactions_callback(self, sender, app_data):
         self.on_toggle_interaction_clicked.dispatch()
@@ -192,19 +223,7 @@ class Gui:
 
     def create_intensity_settings(self):
         dpg.add_text("Intensity Settings")
-        element_labels = {
-            Element.LEFT_PECTORAL_SETTING_SLIDER: "Left Pectoral",
-            Element.RIGHT_PECTORAL_SETTING_SLIDER: "Right Pectoral",
-            Element.LEFT_ABDOMINAL_SETTING_SLIDER: "Left Abdominal",
-            Element.RIGHT_ABDOMINAL_SETTING_SLIDER: "Right Abdominal",
-            Element.LEFT_ARM_SETTING_SLIDER: "Left Arm",
-            Element.RIGHT_ARM_SETTING_SLIDER: "Right Arm",
-            Element.LEFT_DORSAL_SETTING_SLIDER: "Left Dorsal",
-            Element.RIGHT_DORSAL_SETTING_SLIDER: "Right Dorsal",
-            Element.LEFT_LUMBAR_SETTING_SLIDER: "Left Lumbar",
-            Element.RIGHT_LUMBAR_SETTING_SLIDER: "Right Lumbar",
-        }
-        for element, label in element_labels.items():
+        for element, label in self.element_labels.items():
             self.create_intensity_slider(element, label)
 
     def create_intensity_slider(self, element: Element, label: str):
