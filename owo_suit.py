@@ -71,18 +71,18 @@ class OWOSuit:
             time.sleep(.3)
 
     def on_collission_enter(self, address: str, *args) -> None:
-        if not address in self.osc_parameters:
+        if address not in self.osc_parameters:
             return
         if len(args) != 1:
             return
         was_entered: bool = args[0]
         if type(was_entered) != bool:
             return
-        muscle = self.osc_parameters[address]
+        muscle = self.osc_parameters.get(address)
         if was_entered:
             self.active_muscles.add(muscle)
         else:
-            self.active_muscles.remove(muscle)
+            self.active_muscles.discard(muscle)
 
     def map_parameters(self, dispatcher: dispatcher.Dispatcher) -> None:
         dispatcher.set_default_handler(self.on_collission_enter)
