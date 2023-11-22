@@ -19,7 +19,8 @@ def get_unused_port(range_start: int, range_stop: int) -> int | OSError:
 
 
 class Config:
-    def __init__(self):
+    def __init__(self, log: logging.Logger):
+        self._log = log
         self.APP_NAME = 'VRChatOWOSuit'
         self.current_config = None
 
@@ -47,7 +48,8 @@ class Config:
         }
 
     def get_by_key(self, key: str):
-        return self.current_config.get(key)
+        if self.current_config is not None:
+            return self.current_config.get(key)
 
     def update(self, key: str, nextValue):
         if (key in self.current_config):

@@ -1,3 +1,5 @@
+import logging
+
 import params
 import config
 import webbrowser
@@ -31,8 +33,11 @@ class Element(Enum):
 
 
 class Gui:
-    def __init__(self, config: config.Config, window_width: int, window_height: int, logo_path: str):
+    def __init__(self, config: config.Config, window_width: int, window_height: int, logo_path: str, log: logging.Logger):
+        self._terminal_buf = ""
+        self._log = log
         self.config = config
+        self._is_initialized = False
         self.sliders = []
         self.window_width = window_width
         self.window_height = window_height
@@ -99,6 +104,7 @@ class Gui:
             Element.RIGHT_LUMBAR_SETTING_SLIDER: "Right Lumbar",
         }
         self.ids_to_elements = None
+        dpg.create_context()
 
     def handle_connect_callback(self, sender, app_data):
         self.on_connect_clicked.dispatch(sender, app_data)
@@ -131,17 +137,21 @@ class Gui:
         self.on_toggle_interaction_clicked.dispatch()
 
     def handle_input_change(self, sender, app_data):
-        element = self.ids_to_elements.get(sender)
-        config_key = self.element_to_config_key.get(element)
-        # this implies its an intensity
-        if config_key is None:
-            intensities_map = self.element_to_config_key.get("intensities")
-            config_key = intensities_map.get(element)
-            intensities = self.config.get_by_key("intensities")
-            intensities[config_key] = app_data
-            self.config.update("intensities", intensities)
-            return
-        self.config.update(config_key, app_data)
+        try:
+            element = self.ids_to_elements.get(sender)
+            config_key = self.element_to_config_key.get(element)
+            # this implies its an intensity
+            if config_key is None:
+                intensities_map = self.element_to_config_key.get("intensities")
+                config_key = intensities_map.get(element)
+                intensities = self.config.get_by_key("intensities")
+                intensities[config_key] = app_data
+                self.config.update("intensities", intensities)
+                return
+            self.config.update(config_key, app_data)
+        except Exception as err:
+            self._log.error("Got Exception in handle_input_change: %s" % err)
+            self._log.error("This error is probably caused by another error. Please see below messages")
 
     def handle_contribute_callback(self, sender, app_data):
         webbrowser.open("https://github.com/uzair-ashraf/vrc-owo-suit")
@@ -182,9 +192,9 @@ class Gui:
         return resize_callback
 
     def print_terminal(self, text: str) -> None:
-        value = dpg.get_value(self.elements[Element.TERMINAL_WINDOW_INPUT])
-        dpg.set_value(
-            self.elements[Element.TERMINAL_WINDOW_INPUT], text + '\n' + value)
+        self._terminal_buf = text + '\n' + self._terminal_buf
+        if self._is_initialized:
+            dpg.set_value(self.elements[Element.TERMINAL_WINDOW_INPUT], self._terminal_buf)
 
     def on_clear_console(self, *args) -> None:
         dpg.set_value(
@@ -200,7 +210,7 @@ class Gui:
                                                                      width=-1, callback=self.handle_input_change)
 
     def create_detect_address_checkbox(self):
-        should_detect_ip = self.config.get_by_key("should_detect_ip")
+        should_detect_ip = self.config.get_by_key("should_detect_ip") or True
         self.elements[Element.DETECT_IP_ADDRESS_CHECKBOX] = dpg.add_checkbox(
             label="Automatically Detect IP Address", default_value=should_detect_ip, callback=self.handle_input_change)
 
@@ -211,7 +221,7 @@ class Gui:
                                                                             width=-1, callback=self.handle_input_change)
 
     def create_frequency_slider(self):
-        frequency = self.config.get_by_key("frequency")
+        frequency = self.config.get_by_key("frequency") or 100
         dpg.add_text("Frequency Settings")
         self.elements[Element.FREQUENCY_SETTING_SLIDER] = dpg.add_slider_int(
             min_value=0,
@@ -230,7 +240,10 @@ class Gui:
         intensities_map = self.element_to_config_key.get("intensities")
         config_key = intensities_map.get(element)
         intensities = self.config.get_by_key("intensities")
-        default_value = intensities.get(config_key) or 0
+        if intensities is not None:
+            default_value = intensities.get(config_key) or 0
+        else:
+            default_value = 0
         self.elements[element] = dpg.add_slider_int(default_value=default_value, min_value=0, width=-120,
                                                     max_value=100, label=label, callback=self.handle_input_change)
 
@@ -238,7 +251,7 @@ class Gui:
         dpg.add_text("Logs")
         self.elements[Element.TERMINAL_WINDOW_INPUT] = dpg.add_input_text(
             multiline=True, readonly=True, height=90, width=-1)
-
+        dpg.set_value(self.elements[Element.TERMINAL_WINDOW_INPUT], self._terminal_buf)
     def create_button_group(self):
         with dpg.group(horizontal=True):
             self.elements[Element.CONNECT_BUTTON] = dpg.add_button(label="Connect",
@@ -253,7 +266,7 @@ class Gui:
     def create_connect_startup_checkbox(self):
         should_connect_on_startup = self.config.get_by_key(
             "should_connect_on_startup"
-        )
+        ) or False
         self.elements[Element.CONNECT_ON_STARTUP_CHECKBOX] = dpg.add_checkbox(
             default_value=should_connect_on_startup,
             label="Automatically Connect on Startup",
@@ -276,6 +289,9 @@ class Gui:
             self.handle_connect_callback(Element.CONNECT_BUTTON, None)
 
     def init(self):
+        if self._is_initialized:  # Make sure to only run init once
+            return
+        self._is_initialized = True
         dpg.create_context()
         with dpg.window(tag="MAIN_WINDOW"):
             dpg.add_spacer(height=20)
@@ -315,3 +331,12 @@ class Gui:
 
     def cleanup(self):
         dpg.destroy_context()
+
+
+class GuiLogger(logging.Handler):
+    def __init__(self, gui: Gui) -> None:
+        super().__init__()
+        self._gui = gui
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self._gui.print_terminal(self.formatter.format(record))
