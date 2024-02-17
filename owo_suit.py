@@ -11,7 +11,7 @@ import os
 dll_path = os.path.abspath(os.path.join(os.path.dirname(__file__), './owo/OWO.dll'))
 from System.Reflection import Assembly
 Assembly.UnsafeLoadFrom(dll_path)
-from OWOGame import OWO, SensationsFactory, Muscle, ConnectionState
+from OWOGame import OWO, SensationsFactory, Muscle, ConnectionState, GameAuth
 
 class OWOSuit:
     def __init__(self, config: Config, gui: Gui):
@@ -88,6 +88,7 @@ class OWOSuit:
         dispatcher.set_default_handler(self.on_collission_enter)
 
     def connect(self) -> bool:
+        OWO.Configure(GameAuth.Create().WithId(74604770))
         owo_ip = self.config.get_by_key("owo_ip")
         if type(owo_ip) is str and owo_ip != "":
             OWO.Connect(owo_ip)
