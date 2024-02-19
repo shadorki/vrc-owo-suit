@@ -88,7 +88,7 @@ class OWOSuit:
         dispatcher.set_default_handler(self.on_collission_enter)
 
     def connect(self) -> bool:
-        OWO.Configure(GameAuth.Create().WithId(74604770))
+        OWO.Configure(GameAuth.Create().WithId("74604770"))
         owo_ip = self.config.get_by_key("owo_ip")
         if type(owo_ip) is str and owo_ip != "":
             OWO.Connect(owo_ip)
