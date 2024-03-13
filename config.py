@@ -1,14 +1,34 @@
-import json
+import logging
+import socket
+
 import params
 import os
 import json
 
 
+def get_unused_port(range_start: int, range_stop: int) -> int | OSError:
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    for i in range(range_start, range_stop):
+        try:
+            s.bind(('127.0.0.1', i))
+            s.close()
+            return i
+        except OSError as err:
+            if i == range_stop - 1:
+                raise err
+
+
 class Config:
-    def __init__(self):
+    def __init__(self, log: logging.Logger):
+        self._log = log
         self.APP_NAME = 'VRChatOWOSuit'
-        self.default_config = {
-            "server_port": 9001,
+        self.current_config = None
+
+    @property
+    def default_config(self):
+        server_port = get_unused_port(9001, 9010)
+        return {
+            "server_port": server_port,
             "owo_ip": "",
             "should_detect_ip": True,
             "should_connect_on_startup": False,
@@ -26,10 +46,10 @@ class Config:
                 params.owo_suit_Lumbar_R: 60,
             }
         }
-        self.current_config = None
 
     def get_by_key(self, key: str):
-        return self.current_config.get(key)
+        if self.current_config is not None:
+            return self.current_config.get(key)
 
     def update(self, key: str, nextValue):
         if (key in self.current_config):
