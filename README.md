@@ -10,7 +10,7 @@ This application is not affiliated with VRChat or OWO. By using this software yo
 
 ## Installation
 
-Head over to the [Releases](https://github.com/uzair-ashraf/vrc-owo-suit/releases) page to get the latest release.
+Head over to the [Releases](https://github.com/shadorki/vrc-owo-suit/releases) page to get the latest release.
 
 1. Download the executable.
 
@@ -90,7 +90,7 @@ Head over to the [Releases](https://github.com/uzair-ashraf/vrc-owo-suit/release
 1. Clone the repository
 
    ```shell
-   git clone git@github.com:uzair-ashraf/vrc-owo-suit.git
+   git clone git@github.com:shadorki/vrc-owo-suit.git
    cd vrc-owo-suit
    ```
 
@@ -116,7 +116,7 @@ If this your first time working with OSC head over to the [VRChat docs to learn 
 
 This doc assumes you have a Unity Package with an avatar already set up to be published to VRChat along with some knowledge of how to use Unity.
 
-1. Head over to the [releases](https://github.com/uzair-ashraf/vrc-owo-suit/releases) page and download the unity package from the latest release.
+1. Head over to the [releases](https://github.com/shadorki/vrc-owo-suit/releases) page and download the unity package from the latest release.
 
 1. Open your Unity Project with your avatar.
 
